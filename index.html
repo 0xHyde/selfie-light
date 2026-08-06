@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#101014">
+<title>自拍补光灯</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- 光源层 -->
+  <div id="light" class="light"></div>
+  <!-- 亮度遮罩（感知亮度，Web 无法控制系统亮度） -->
+  <div id="dim" class="dim"></div>
+
+  <!-- 开始层 -->
+  <div id="startOverlay" class="overlay start">
+    <h1>自拍补光灯</h1>
+    <p class="hint">把手机屏幕对着自己，屏幕就是补光灯</p>
+    <p class="ios-hint">iPhone 用户：请先在控制中心把亮度拉满</p>
+    <button id="startBtn" class="btn-primary">开始打光</button>
+  </div>
+
+  <!-- UI 控制层（沉浸模式下整体隐藏） -->
+  <div id="ui" class="ui">
+    <video id="cam" class="cam" playsinline muted autoplay></video>
+
+    <div class="presets">
+      <button class="preset active" data-name="暖白" data-k="3500" data-tint="0.15">暖白</button>
+      <button class="preset" data-name="冷白" data-k="5500" data-tint="0">冷白</button>
+      <button class="preset" data-name="粉调" data-k="3300" data-tint="0.85">粉调</button>
+      <button class="preset" data-name="自然光" data-k="4500" data-tint="0">自然光</button>
+    </div>
+
+    <div class="sliders">
+      <label>色温 <span id="kVal">3500K</span><input id="kSlider" type="range" min="3000" max="6500" step="100" value="3500"></label>
+      <label>亮度 <span id="bVal">100%</span><input id="bSlider" type="range" min="0" max="100" step="1" value="100"></label>
+    </div>
+
+    <div class="actions">
+      <button id="camToggle" class="btn">相机开</button>
+      <button id="shutter" class="btn-shutter" disabled title="拍照">📷</button>
+      <button id="clearBtn" class="btn">清空</button>
+    </div>
+
+    <div id="strip" class="strip"></div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
