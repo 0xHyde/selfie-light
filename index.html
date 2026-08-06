@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#101014">
 <title>自拍补光灯</title>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
 
@@ -69,13 +69,16 @@
       <button id="clearBtn" class="btn">清空</button>
     </div>
 
-    <p class="ui-hint">轻点屏幕 = 纯光模式 · 沉浸后：左右滑切预设，上下滑调亮度，双击拍照</p>
+    <p class="ui-hint">轻点屏幕 = 纯光模式 · 沉浸后：左右滑切预设，上下滑调亮度，点底部快门拍照（或双击屏幕）</p>
 
     <div id="strip" class="strip"></div>
   </div>
 
+  <!-- 沉浸模式专用快门：纯光模式下半透明浮在底部中央 -->
+  <button id="immerseShutter" class="shutter-mini hidden" disabled title="拍照"></button>
+
   <div id="toast" class="toast"></div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>

@@ -21,6 +21,7 @@ const kVal = $('#kVal');
 const bVal = $('#bVal');
 const cam = $('#cam');
 const shutter = $('#shutter');
+const immerseShutter = $('#immerseShutter');
 const camToggle = $('#camToggle');
 const immerseBtn = $('#immerseBtn');
 const strip = $('#strip');
@@ -160,6 +161,7 @@ async function startCamera() {
     cam.classList.remove('off');
     camToggle.textContent = '相机关';
     shutter.disabled = false;
+    immerseShutter.disabled = false;
   } catch (e) {
     state.camOn = false;
     toast('相机不可用，仍可当纯补光灯使用');
@@ -173,6 +175,7 @@ function stopCamera() {
   cam.classList.add('off');
   camToggle.textContent = '相机开';
   shutter.disabled = true;
+  immerseShutter.disabled = true;
 }
 
 camToggle.addEventListener('click', () => {
@@ -214,6 +217,7 @@ function takePhoto() {
 }
 
 shutter.addEventListener('click', takePhoto);
+immerseShutter.addEventListener('click', takePhoto);
 
 $('#clearBtn').addEventListener('click', () => { strip.innerHTML = ''; });
 
@@ -251,7 +255,8 @@ cam.addEventListener('pointercancel', endCamDrag);
 function setImmersed(on) {
   state.immersed = on;
   ui.classList.toggle('hidden', on);
-  if (on) hud('纯光模式 · 左右滑切预设 · 上下滑调亮度 · 双击拍照', 1800);
+  immerseShutter.classList.toggle('hidden', !on);   // 纯光模式下显示迷你快门
+  if (on) hud('纯光模式 · 左右滑切预设 · 上下滑调亮度 · 底部快门拍照', 1800);
 }
 
 immerseBtn.addEventListener('click', () => setImmersed(true));
@@ -363,7 +368,7 @@ startBtn.addEventListener('click', () => {
   enterFullscreen();   // 需用户手势触发
   acquireWakeLock();   // 防休眠
   startCamera();       // 失败时降级为纯补光灯
-  toast('轻点屏幕 = 纯光模式 · 双击 = 拍照');
+  toast('轻点屏幕 = 纯光模式 · 沉浸后点底部快门拍照');
 });
 
 /* 初始渲染 */

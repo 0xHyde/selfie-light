@@ -287,6 +287,37 @@ input[type="range"]::-moz-range-thumb {
 
 .btn-shutter:disabled { opacity: .4; }
 
+/* ---- 沉浸模式快门：半透明浮于底部中央，不破坏纯光氛围 ---- */
+.shutter-mini {
+  position: fixed;
+  bottom: calc(26px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 22;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, .9);
+  background: rgba(255, 255, 255, .12);
+  cursor: pointer;
+  opacity: .82;
+}
+
+.shutter-mini::after {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #ffe3ec, #ffb3c9);
+  transition: transform .12s ease;
+}
+
+.shutter-mini:active::after { transform: scale(.88); }
+
+.shutter-mini:disabled { opacity: .35; }
+
+.shutter-mini.hidden { display: none; }
+
 /* ---- 照片条 ---- */
 .strip {
   display: flex;
