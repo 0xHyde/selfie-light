@@ -3,6 +3,7 @@
 /* ================= 状态 ================= */
 const state = {
   started: false,
+  immersed: false,
   kelvin: 3500,      // 色温（K）
   pink: 0.15,        // 粉调混合量（预设专用，0~1）
   brightness: 100,   // 亮度（%）
@@ -13,6 +14,7 @@ const state = {
 const $ = (s) => document.querySelector(s);
 const light = $('#light');
 const dim = $('#dim');
+const hudEl = $('#hud');
 const kSlider = $('#kSlider');
 const bSlider = $('#bSlider');
 const kVal = $('#kVal');
@@ -20,11 +22,21 @@ const bVal = $('#bVal');
 const cam = $('#cam');
 const shutter = $('#shutter');
 const camToggle = $('#camToggle');
+const immerseBtn = $('#immerseBtn');
 const strip = $('#strip');
 const ui = $('#ui');
 const toastEl = $('#toast');
 const startOverlay = $('#startOverlay');
 const startBtn = $('#startBtn');
+
+/* ================= 预设 ================= */
+const PRESETS = [
+  { name: '暖白', k: 3500, tint: 0.15 },
+  { name: '冷白', k: 5500, tint: 0 },
+  { name: '粉调', k: 3300, tint: 0.85 },
+  { name: '自然光', k: 4500, tint: 0 },
+];
+let presetIdx = 0;
 
 /* ================= 色温 -> RGB ================= */
 // Tanner Helland 黑体色温近似
@@ -55,31 +67,45 @@ const soften = ([r, g, b]) => [
 
 const PINK = [255, 205, 216];
 
-function lightColor() {
-  let [r, g, b] = soften(kelvinToRGB(state.kelvin));
-  const p = state.pink * 0.6;              // 向粉调混合
-  r = Math.round(r + (PINK[0] - r) * p);
-  g = Math.round(g + (PINK[1] - g) * p);
-  b = Math.round(b + (PINK[2] - b) * p);
-  return `rgb(${r},${g},${b})`;
+function lightRGB(k, tint) {
+  let [r, g, b] = soften(kelvinToRGB(k));
+  const m = tint * 0.6;              // 向粉调混合
+  r = Math.round(r + (PINK[0] - r) * m);
+  g = Math.round(g + (PINK[1] - g) * m);
+  b = Math.round(b + (PINK[2] - b) * m);
+  return [r, g, b];
 }
 
 function applyLight() {
-  light.style.background = lightColor();
+  const [r, g, b] = lightRGB(state.kelvin, state.pink);
+  light.style.background = `rgb(${r},${g},${b})`;
   dim.style.opacity = String((100 - state.brightness) / 100);
 }
 
-/* ================= 预设 ================= */
+/* 滑杆轨道渐变 */
+function initTracks() {
+  const warm = lightRGB(3000, 0);
+  const cool = lightRGB(6500, 0);
+  kSlider.style.setProperty('--track', `linear-gradient(to right, rgb(${warm.join(',')}), rgb(${cool.join(',')}))`);
+  bSlider.style.setProperty('--track', 'linear-gradient(to right, #000, #fff)');
+}
+
+/* ================= 预设按钮 ================= */
+function applyPreset(idx) {
+  presetIdx = (idx + PRESETS.length) % PRESETS.length;
+  const p = PRESETS[presetIdx];
+  state.kelvin = p.k;
+  state.pink = p.tint;
+  kSlider.value = state.kelvin;
+  kVal.textContent = state.kelvin + 'K';
+  document.querySelectorAll('.preset').forEach((b) => b.classList.toggle('active', Number(b.dataset.idx) === presetIdx));
+  applyLight();
+}
+
 document.querySelectorAll('.preset').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.preset').forEach((b) => b.classList.remove('active'));
-    btn.classList.add('active');
-    state.kelvin = Number(btn.dataset.k);
-    state.pink = Number(btn.dataset.tint);
-    kSlider.value = state.kelvin;
-    kVal.textContent = state.kelvin + 'K';
-    applyLight();
-  });
+  const i = Number(btn.dataset.idx);
+  btn.style.setProperty('--swatch', `rgb(${lightRGB(PRESETS[i].k, PRESETS[i].tint).join(',')})`);
+  btn.addEventListener('click', () => applyPreset(i));
 });
 
 /* ================= 滑杆 ================= */
@@ -182,15 +208,89 @@ shutter.addEventListener('click', () => {
 
 $('#clearBtn').addEventListener('click', () => { strip.innerHTML = ''; });
 
-/* ================= 沉浸模式：轻点空白处隐藏/显示 UI ================= */
+/* ================= 沉浸模式 + 手势调光 ================= */
+function setImmersed(on) {
+  state.immersed = on;
+  ui.classList.toggle('hidden', on);
+  if (on) hud('纯光模式 · 左右滑切预设，上下滑调亮度', 1600);
+}
+
+immerseBtn.addEventListener('click', () => setImmersed(true));
+
+// 轻点空白处：切换沉浸模式（touch 手势后的 click 用时间戳抑制，避免双重切换）
+let suppressClickAt = 0;
+
 document.body.addEventListener('click', (e) => {
   if (!state.started) return;
-  if (e.target.closest('button, input, .strip')) return;
-  ui.classList.toggle('hidden');
+  if (Date.now() - suppressClickAt < 500) { suppressClickAt = 0; return; }
+  if (e.target.closest('button, input, .strip, .cam')) return;
+  setImmersed(!state.immersed);
 });
 
-/* ================= 提示 ================= */
+let g = null;
+
+document.body.addEventListener('touchstart', (e) => {
+  if (!state.started || e.target.closest('button, input, .strip, .cam')) return;
+  const t = e.touches[0];
+  g = { x: t.clientX, y: t.clientY, axis: null, dx: 0, dy: 0, b0: state.brightness, moved: false };
+}, { passive: true });
+
+document.body.addEventListener('touchmove', (e) => {
+  if (!g) return;
+  const t = e.touches[0];
+  const dx = t.clientX - g.x;
+  const dy = t.clientY - g.y;
+  if (!g.axis) {
+    if (Math.abs(dx) < 12 && Math.abs(dy) < 12) return; // 位移不足，尚未判定方向
+    g.axis = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
+    document.body.classList.add('dragging');
+  }
+  g.dx = dx;
+  g.dy = dy;
+  g.moved = true;
+
+  if (g.axis === 'v') {                      // 上下滑 = 调亮度（实时跟手）
+    const next = Math.max(0, Math.min(100, Math.round(g.b0 - dy * 0.25)));
+    if (next !== state.brightness) {
+      state.brightness = next;
+      bSlider.value = next;
+      bVal.textContent = next + '%';
+      applyLight();
+      hud('亮度 ' + next + '%');
+    }
+  }
+  if (e.cancelable) e.preventDefault();      // 阻止 iOS 橡皮筋/下拉
+}, { passive: false });
+
+document.body.addEventListener('touchend', () => {
+  if (!g) return;
+  const { axis, dx, moved } = g;
+  g = null;
+  document.body.classList.remove('dragging');
+
+  if (axis === 'h' && Math.abs(dx) > 60) {   // 左右滑 = 切预设（松手生效）
+    applyPreset(presetIdx + (dx < 0 ? 1 : -1));
+    if (navigator.vibrate) navigator.vibrate(12);
+    hud('预设 · ' + PRESETS[presetIdx].name);
+  } else if (!moved && state.immersed) {     // 轻点 = 退出沉浸
+    suppressClickAt = Date.now();
+    setImmersed(false);
+  }
+});
+
+/* ================= 手势 HUD ================= */
+let hudTimer;
+
+function hud(text, ms = 900) {
+  hudEl.textContent = text;
+  hudEl.classList.add('show');
+  clearTimeout(hudTimer);
+  hudTimer = setTimeout(() => hudEl.classList.remove('show'), ms);
+}
+
+/* ================= 轻提示 ================= */
 let toastTimer;
+
 function toast(msg) {
   toastEl.textContent = msg;
   toastEl.classList.add('show');
@@ -205,7 +305,9 @@ startBtn.addEventListener('click', () => {
   enterFullscreen();   // 需用户手势触发
   acquireWakeLock();   // 防休眠
   startCamera();       // 失败时降级为纯补光灯
+  toast('轻点屏幕 = 纯光模式');
 });
 
 /* 初始渲染 */
+initTracks();
 applyLight();

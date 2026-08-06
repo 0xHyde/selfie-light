@@ -14,11 +14,29 @@
   <!-- 亮度遮罩（感知亮度，Web 无法控制系统亮度） -->
   <div id="dim" class="dim"></div>
 
+  <!-- 手势 HUD：沉浸模式下滑动调光的即时反馈 -->
+  <div id="hud" class="hud"></div>
+
   <!-- 开始层 -->
   <div id="startOverlay" class="overlay start">
+    <svg class="logo" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#FFE3EC"/>
+          <stop offset="1" stop-color="#FFA8C3"/>
+        </linearGradient>
+      </defs>
+      <circle cx="32" cy="32" r="15" fill="url(#lg)"/>
+      <g stroke="url(#lg)" stroke-width="4" stroke-linecap="round">
+        <path d="M32 7v7"/><path d="M32 50v7"/>
+        <path d="M7 32h7"/><path d="M50 32h7"/>
+        <path d="M15 15l5 5"/><path d="M44 44l5 5"/>
+        <path d="M15 49l5-5"/><path d="M44 20l5-5"/>
+      </g>
+    </svg>
     <h1>自拍补光灯</h1>
-    <p class="hint">把手机屏幕对着自己，屏幕就是补光灯</p>
-    <p class="setup-hint">请先手动把系统亮度拉满（iOS：控制中心 / 安卓：快捷面板）</p>
+    <p class="hint">把手机屏幕对着自己<br>屏幕就是补光灯</p>
+    <p class="setup-hint">使用前请先手动拉满系统亮度<br>（iOS：控制中心 / 安卓：快捷面板）</p>
     <button id="startBtn" class="btn-primary">开始打光</button>
   </div>
 
@@ -27,22 +45,30 @@
     <video id="cam" class="cam" playsinline muted autoplay></video>
 
     <div class="presets">
-      <button class="preset active" data-name="暖白" data-k="3500" data-tint="0.15">暖白</button>
-      <button class="preset" data-name="冷白" data-k="5500" data-tint="0">冷白</button>
-      <button class="preset" data-name="粉调" data-k="3300" data-tint="0.85">粉调</button>
-      <button class="preset" data-name="自然光" data-k="4500" data-tint="0">自然光</button>
+      <button class="preset active" data-idx="0" title="暖白"><span class="swatch"></span><span class="pname">暖白</span></button>
+      <button class="preset" data-idx="1" title="冷白"><span class="swatch"></span><span class="pname">冷白</span></button>
+      <button class="preset" data-idx="2" title="粉调"><span class="swatch"></span><span class="pname">粉调</span></button>
+      <button class="preset" data-idx="3" title="自然光"><span class="swatch"></span><span class="pname">自然光</span></button>
     </div>
 
-    <div class="sliders">
-      <label>色温 <span id="kVal">3500K</span><input id="kSlider" type="range" min="3000" max="6500" step="100" value="3500"></label>
-      <label>亮度 <span id="bVal">100%</span><input id="bSlider" type="range" min="0" max="100" step="1" value="100"></label>
+    <div class="slider-block">
+      <label for="kSlider">色温 <span id="kVal">3500K</span></label>
+      <input id="kSlider" type="range" min="3000" max="6500" step="100" value="3500">
+    </div>
+
+    <div class="slider-block">
+      <label for="bSlider">亮度 <span id="bVal">100%</span></label>
+      <input id="bSlider" type="range" min="0" max="100" step="1" value="100">
     </div>
 
     <div class="actions">
       <button id="camToggle" class="btn">相机开</button>
-      <button id="shutter" class="btn-shutter" disabled title="拍照">📷</button>
+      <button id="shutter" class="btn-shutter" disabled title="拍照"></button>
+      <button id="immerseBtn" class="btn" title="隐藏全部界面，进入纯光模式">沉浸</button>
       <button id="clearBtn" class="btn">清空</button>
     </div>
+
+    <p class="ui-hint">轻点屏幕 = 纯光模式 · 沉浸后：左右滑切预设，上下滑调亮度</p>
 
     <div id="strip" class="strip"></div>
   </div>
