@@ -17,6 +17,9 @@
   <!-- 手势 HUD：沉浸模式下滑动调光的即时反馈 -->
   <div id="hud" class="hud"></div>
 
+  <!-- 前置相机预览：可拖动小窗，镜像显示 -->
+  <video id="cam" class="cam off" playsinline muted autoplay></video>
+
   <!-- 开始层 -->
   <div id="startOverlay" class="overlay start">
     <svg class="logo" viewBox="0 0 64 64" fill="none" aria-hidden="true">
@@ -42,8 +45,6 @@
 
   <!-- UI 控制层（沉浸模式下整体隐藏） -->
   <div id="ui" class="ui">
-    <video id="cam" class="cam" playsinline muted autoplay></video>
-
     <div class="presets">
       <button class="preset active" data-idx="0" title="暖白"><span class="swatch"></span><span class="pname">暖白</span></button>
       <button class="preset" data-idx="1" title="冷白"><span class="swatch"></span><span class="pname">冷白</span></button>
@@ -68,7 +69,7 @@
       <button id="clearBtn" class="btn">清空</button>
     </div>
 
-    <p class="ui-hint">轻点屏幕 = 纯光模式 · 沉浸后：左右滑切预设，上下滑调亮度</p>
+    <p class="ui-hint">轻点屏幕 = 纯光模式 · 沉浸后：左右滑切预设，上下滑调亮度，双击拍照</p>
 
     <div id="strip" class="strip"></div>
   </div>

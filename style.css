@@ -141,11 +141,11 @@ body.dragging .light, body.dragging .dim { transition: none; }
 
 .ui.hidden { display: none; }
 
-/* 前置相机预览：右上角小窗，镜像显示 */
+/* 前置相机预览：可拖动小窗，镜像显示 */
 .cam {
   position: fixed;
-  top: calc(14px + env(safe-area-inset-top));
-  right: 14px;
+  top: 14px;
+  right: 14px;              /* 默认右上角；拖动后由 JS 以 left/top 定位 */
   z-index: 21;
   width: 104px;
   aspect-ratio: 3 / 4;
@@ -155,7 +155,11 @@ body.dragging .light, body.dragging .dim { transition: none; }
   background: #111;
   transform: scaleX(-1);
   box-shadow: 0 4px 18px rgba(0, 0, 0, .3);
+  touch-action: none;       /* 允许小窗拖动 */
+  cursor: grab;
 }
+
+.cam.off { display: none; }
 
 /* ---- 预设（色块 + 名称） ---- */
 .presets { display: flex; gap: 14px; justify-content: space-between; }

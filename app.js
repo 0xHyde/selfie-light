@@ -157,6 +157,7 @@ async function startCamera() {
     });
     cam.srcObject = stream;
     state.camOn = true;
+    cam.classList.remove('off');
     camToggle.textContent = '相机关';
     shutter.disabled = false;
   } catch (e) {
@@ -169,6 +170,7 @@ function stopCamera() {
   if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; }
   cam.srcObject = null;
   state.camOn = false;
+  cam.classList.add('off');
   camToggle.textContent = '相机开';
   shutter.disabled = true;
 }
@@ -179,8 +181,11 @@ camToggle.addEventListener('click', () => {
 });
 
 /* ================= 拍照 ================= */
-shutter.addEventListener('click', () => {
-  if (!state.camOn || !cam.videoWidth) return;
+function takePhoto() {
+  if (!state.camOn || !cam.videoWidth) {
+    toast('请先开启相机');
+    return;
+  }
   const canvas = document.createElement('canvas');
   canvas.width = cam.videoWidth;
   canvas.height = cam.videoHeight;
@@ -204,15 +209,49 @@ shutter.addEventListener('click', () => {
     strip.prepend(card);
     strip.scrollLeft = 0;
   }, 'image/png');
-});
+  if (navigator.vibrate) navigator.vibrate(20);
+  toast('已拍照');
+}
+
+shutter.addEventListener('click', takePhoto);
 
 $('#clearBtn').addEventListener('click', () => { strip.innerHTML = ''; });
+
+/* ================= 相机小窗拖动 ================= */
+const CAM_W = 104;
+
+function placeCamDefault() {
+  cam.style.right = 'auto';
+  cam.style.left = Math.max(0, window.innerWidth - CAM_W - 14) + 'px';
+  cam.style.top = '14px';
+}
+
+let camDrag = null;
+
+cam.addEventListener('pointerdown', (e) => {
+  camDrag = { px: e.clientX, py: e.clientY, ox: cam.offsetLeft, oy: cam.offsetTop };
+  cam.setPointerCapture(e.pointerId);
+});
+
+cam.addEventListener('pointermove', (e) => {
+  if (!camDrag) return;
+  const w = cam.offsetWidth;
+  const h = cam.offsetHeight;
+  const nx = Math.max(0, Math.min(window.innerWidth - w, camDrag.ox + e.clientX - camDrag.px));
+  const ny = Math.max(0, Math.min(window.innerHeight - h, camDrag.oy + e.clientY - camDrag.py));
+  cam.style.left = nx + 'px';
+  cam.style.top = ny + 'px';
+});
+
+const endCamDrag = () => { camDrag = null; };
+cam.addEventListener('pointerup', endCamDrag);
+cam.addEventListener('pointercancel', endCamDrag);
 
 /* ================= 沉浸模式 + 手势调光 ================= */
 function setImmersed(on) {
   state.immersed = on;
   ui.classList.toggle('hidden', on);
-  if (on) hud('纯光模式 · 左右滑切预设，上下滑调亮度', 1600);
+  if (on) hud('纯光模式 · 左右滑切预设 · 上下滑调亮度 · 双击拍照', 1800);
 }
 
 immerseBtn.addEventListener('click', () => setImmersed(true));
@@ -228,6 +267,8 @@ document.body.addEventListener('click', (e) => {
 });
 
 let g = null;
+let lastTapAt = 0;
+let singleTapTimer = null;
 
 document.body.addEventListener('touchstart', (e) => {
   if (!state.started || e.target.closest('button, input, .strip, .cam')) return;
@@ -272,9 +313,26 @@ document.body.addEventListener('touchend', () => {
     applyPreset(presetIdx + (dx < 0 ? 1 : -1));
     if (navigator.vibrate) navigator.vibrate(12);
     hud('预设 · ' + PRESETS[presetIdx].name);
-  } else if (!moved && state.immersed) {     // 轻点 = 退出沉浸
-    suppressClickAt = Date.now();
-    setImmersed(false);
+    return;
+  }
+  if (moved) return;                         // 垂直拖动后松手，不算点按
+
+  // —— 轻点 ——
+  if (!state.immersed) return;               // 未沉浸：由 click 进入沉浸
+
+  // 沉浸中：单击（延迟退出）与双击（拍照）区分
+  suppressClickAt = Date.now();
+  const now = Date.now();
+  if (now - lastTapAt < 300) {               // 双击 → 拍照
+    lastTapAt = 0;
+    clearTimeout(singleTapTimer);
+    takePhoto();
+  } else {                                   // 单击 → 稍后退出（等待可能的第二击）
+    lastTapAt = now;
+    clearTimeout(singleTapTimer);
+    singleTapTimer = setTimeout(() => {
+      if (state.immersed) setImmersed(false);
+    }, 320);
   }
 });
 
@@ -305,9 +363,10 @@ startBtn.addEventListener('click', () => {
   enterFullscreen();   // 需用户手势触发
   acquireWakeLock();   // 防休眠
   startCamera();       // 失败时降级为纯补光灯
-  toast('轻点屏幕 = 纯光模式');
+  toast('轻点屏幕 = 纯光模式 · 双击 = 拍照');
 });
 
 /* 初始渲染 */
+placeCamDefault();
 initTracks();
 applyLight();
