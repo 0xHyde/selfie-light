@@ -51,7 +51,7 @@ body {
 
 .hint { color: #9a9aa5; font-size: 14px; line-height: 1.6; }
 
-.ios-hint {
+.setup-hint {
   color: #c9a24a;
   font-size: 12px;
   background: rgba(255, 255, 255, .06);
